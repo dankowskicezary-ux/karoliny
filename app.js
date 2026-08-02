@@ -769,6 +769,18 @@ if ("openaiKey" in settings || "openaiModel" in settings) {
 }
 let deferredInstallPrompt = null;
 
+function isInstalledApp() {
+  return window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+}
+
+function showInstallHelp() {
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  document.getElementById("installHelpText").textContent = isIOS
+    ? "Na iPhonie otworz strone w Safari, nacisnij Udostepnij (kwadrat ze strzalka), a potem wybierz Do ekranu poczatkowego i Dodaj."
+    : "W menu przegladarki wybierz Zainstaluj aplikacje albo Dodaj do ekranu glownego. Najlepiej uzyc Chrome na Androidzie.";
+  document.getElementById("installHelp").hidden = false;
+}
+
 const tabs = document.querySelectorAll(".tab");
 const panels = {
   today: document.getElementById("todayPanel"),
@@ -2395,16 +2407,27 @@ function bindEvents() {
   window.addEventListener("beforeinstallprompt", event => {
     event.preventDefault();
     deferredInstallPrompt = event;
-    document.getElementById("installBtn").hidden = false;
+    document.getElementById("installBtn").textContent = "Zainstaluj";
   });
 
   document.getElementById("installBtn").addEventListener("click", async () => {
-    if (!deferredInstallPrompt) return;
+    if (!deferredInstallPrompt) {
+      showInstallHelp();
+      return;
+    }
     deferredInstallPrompt.prompt();
-    await deferredInstallPrompt.userChoice;
+    const choice = await deferredInstallPrompt.userChoice;
     deferredInstallPrompt = null;
-    document.getElementById("installBtn").hidden = true;
+    if (choice.outcome === "accepted") document.getElementById("installBtn").hidden = true;
   });
+  document.getElementById("closeInstallHelp").addEventListener("click", () => {
+    document.getElementById("installHelp").hidden = true;
+  });
+  window.addEventListener("appinstalled", () => {
+    document.getElementById("installBtn").hidden = true;
+    showToast("Aplikacja zostala zainstalowana.");
+  });
+  if (isInstalledApp()) document.getElementById("installBtn").hidden = true;
 }
 
 function boot() {
@@ -2426,7 +2449,7 @@ function boot() {
       refreshing = true;
       window.location.reload();
     });
-    navigator.serviceWorker.register("sw.js?v=4").then(registration => {
+    navigator.serviceWorker.register("sw.js?v=5").then(registration => {
       registration.update();
       if (registration.waiting) registration.waiting.postMessage({ type: "SKIP_WAITING" });
       registration.addEventListener("updatefound", () => {

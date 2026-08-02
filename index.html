@@ -4,9 +4,15 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#1f6b5c">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Karoliny">
   <title>Karoliny</title>
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="stylesheet" href="styles.css?v=4">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+  <link rel="stylesheet" href="styles.css?v=5">
 </head>
 <body>
   <div class="app-shell">
@@ -15,7 +21,7 @@
         <p class="eyebrow">Plan Karoliny</p>
         <h1>Karoliny</h1>
       </div>
-      <button class="icon-btn" id="installBtn" type="button" title="Zainstaluj aplikacje" hidden>+</button>
+      <button class="install-btn" id="installBtn" type="button">Zainstaluj</button>
     </header>
 
     <main>
@@ -212,8 +218,16 @@
     </main>
   </div>
 
+  <div class="install-help" id="installHelp" role="dialog" aria-modal="true" aria-labelledby="installHelpTitle" hidden>
+    <div class="install-help-card">
+      <h2 id="installHelpTitle">Zainstaluj aplikacje</h2>
+      <p id="installHelpText"></p>
+      <button id="closeInstallHelp" type="button">Rozumiem</button>
+    </div>
+  </div>
+
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="app.js?v=4"></script>
+  <script src="app.js?v=5"></script>
 </body>
 </html>
 
