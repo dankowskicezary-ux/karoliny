@@ -5,7 +5,7 @@ const defaultTargets = {
   fat: 75
 };
 
-const slotNames = ["Posilek 1", "Posilek 2", "Obiad", "Kolacja"];
+let slotNames = ["Posilek 1", "Posilek 2", "Obiad", "Kolacja"];
 const dayNames = ["Poniedzialek", "Wtorek", "Sroda", "Czwartek", "Piatek", "Sobota", "Niedziela"];
 const dayShortNames = ["Pon", "Wt", "Sr", "Czw", "Pt", "Sob", "Niedz"];
 const CANTEEN_MEAL_NAME = "Kantyna: chude mieso + surowka";
@@ -713,6 +713,12 @@ const shoppingPlan = [
 ];
 
 const defaultSettings = {
+  mealSlots: [
+    { name: "Posilek 1", time: "06:30", type: "light" },
+    { name: "Posilek 2", time: "10:00", type: "light" },
+    { name: "Obiad", time: "15:30", type: "dinner" },
+    { name: "Kolacja", time: "19:00", type: "light" }
+  ],
   mealTimes: ["07:00", "10:30", "14:30", "18:30"],
   mealTypes: ["light", "dinner", "dinner", "light"],
   targets: defaultTargets,
@@ -720,12 +726,6 @@ const defaultSettings = {
   waterStart: "07:30",
   waterEnd: "20:30",
   notifications: false
-};
-
-const shiftPresets = {
-  first: { label: "6:00", mealTimes: ["05:30", "10:30", "14:30", "18:30"], mealTypes: ["light", "canteen", "dinner", "light"], drinkTime: "06:00", waterStart: "05:30", waterEnd: "20:30" },
-  second: { label: "14:00", mealTimes: ["09:00", "12:30", "17:00", "21:00"], mealTypes: ["light", "canteen", "dinner", "light"], drinkTime: "09:30", waterStart: "09:00", waterEnd: "22:30" },
-  night: { label: "22:00", mealTimes: ["18:00", "22:00", "02:00", "06:30"], mealTypes: ["canteen", "dinner", "light", "light"], drinkTime: "21:30", waterStart: "18:00", waterEnd: "07:00" }
 };
 
 function currentPlanDayIndex() {
@@ -737,6 +737,19 @@ let selectedDay = Number(localStorage.getItem(appKey("selectedDay")) ?? String(c
 let settings = JSON.parse(localStorage.getItem(appKey("settings")) || JSON.stringify(defaultSettings));
 settings = { ...defaultSettings, ...settings };
 settings.targets = { ...defaultTargets, ...(settings.targets || {}) };
+if (!Array.isArray(settings.mealSlots) || !settings.mealSlots.length) {
+  settings.mealSlots = (settings.mealTimes || defaultSettings.mealTimes).map((time, index) => ({
+    name: slotNames[index] || `Posilek ${index + 1}`,
+    time,
+    type: settings.mealTypes?.[index] || defaultSettings.mealTypes[index] || "any"
+  }));
+}
+function syncMealSlotSettings() {
+  slotNames = settings.mealSlots.map((slot, index) => slot.name?.trim() || `Posilek ${index + 1}`);
+  settings.mealTimes = settings.mealSlots.map(slot => slot.time || "12:00");
+  settings.mealTypes = settings.mealSlots.map(slot => slot.type || "any");
+}
+syncMealSlotSettings();
 if (settings.guidelinesVersion !== GUIDELINES_VERSION) {
   const savedKcal = Number(settings.targets?.kcal || defaultTargets.kcal);
   settings = {
@@ -803,19 +816,33 @@ function getPlanForDay(day) {
   const weeklyKey = storageKeyForDay("plan", day);
   const savedPlan = localStorage.getItem(weeklyKey) || localStorage.getItem(oldDailyKey) || "{}";
   const fallback = {
-    selected: [0, 0, 0, 0],
-    portions: [1, 1, 1, 1],
+    selected: slotNames.map(() => 0),
+    portions: slotNames.map(() => 1),
     weights: null,
     mealTimes: settings.mealTimes || defaultSettings.mealTimes,
     mealTypes: settings.mealTypes || defaultSettings.mealTypes,
-    manualSlots: [false, false, false, false],
-    shift: null,
+    manualSlots: slotNames.map(() => false),
     done: [],
     drinks: {}
   };
-  const plan = { ...fallback, ...JSON.parse(savedPlan) };
+  const plan = normalizePlanSlots({ ...fallback, ...JSON.parse(savedPlan) });
   restoreSelectedMeals(plan);
   return rememberSelectedMeals(normalizeMealWeights(backfillWeights(plan)));
+}
+
+function normalizePlanSlots(plan) {
+  const length = slotNames.length;
+  const resize = (value, fallback) => Array.from({ length }, (_, index) => Array.isArray(value) && value[index] !== undefined ? value[index] : fallback(index));
+  plan.selected = resize(plan.selected, () => 0);
+  plan.portions = resize(plan.portions, () => 1);
+  plan.mealTimes = resize(settings.mealTimes, index => defaultSettings.mealSlots[index]?.time || "12:00");
+  plan.mealTypes = resize(plan.mealTypes, index => settings.mealTypes[index] || "any").map(type => type === "canteen" ? "any" : type);
+  plan.manualSlots = resize(plan.manualSlots, () => false);
+  plan.done = (plan.done || []).filter(index => index < length);
+  if (Array.isArray(plan.weights)) plan.weights = resize(plan.weights, () => null);
+  if (Array.isArray(plan.selectedMeals)) plan.selectedMeals = resize(plan.selectedMeals, () => null);
+  delete plan.shift;
+  return plan;
 }
 
 function setPlan(plan) {
@@ -851,7 +878,7 @@ function rememberSelectedMeals(plan) {
 }
 
 function markManualSlot(plan, slotIndex, manual = true) {
-  plan.manualSlots = [...(plan.manualSlots || [false, false, false, false])];
+  plan.manualSlots = [...(plan.manualSlots || slotNames.map(() => false))];
   plan.manualSlots[slotIndex] = manual;
 }
 
@@ -1230,6 +1257,7 @@ function renderSummary() {
 
   document.getElementById("dayName").textContent = dayNames[selectedDay];
   document.getElementById("mealCount").textContent = String(doneMeals);
+  document.getElementById("mealTotal").textContent = String(slotNames.length);
   document.getElementById("kcalCount").textContent = kcalText;
   document.getElementById("todayKcal").textContent = `${round(totals.kcal)} kcal`;
   document.getElementById("todayProtein").textContent = `${round(totals.protein)} g`;
@@ -1258,7 +1286,7 @@ function renderMeals() {
     const grams = Number(plan.weights?.[slotIndex] || baseGrams(item));
     const portion = portionFromGrams(item, grams);
     const isDone = plan.done.includes(slotIndex);
-    const isFixedCanteen = plan.mealTypes?.[slotIndex] === "canteen" && item.name === CANTEEN_MEAL_NAME;
+    const isFixedCanteen = false;
 
     const card = document.createElement("article");
     card.className = `meal ${isDone ? "done" : ""}`;
@@ -1272,7 +1300,6 @@ function renderMeals() {
         <select class="meal-type" data-slot="${slotIndex}">
           <option value="light" ${plan.mealTypes?.[slotIndex] === "light" ? "selected" : ""}>lekki</option>
           <option value="dinner" ${plan.mealTypes?.[slotIndex] === "dinner" ? "selected" : ""}>obiadowy</option>
-          <option value="canteen" ${plan.mealTypes?.[slotIndex] === "canteen" ? "selected" : ""}>kantyna</option>
           <option value="any" ${plan.mealTypes?.[slotIndex] === "any" ? "selected" : ""}>dowolny</option>
           <option value="random">random</option>
         </select>
@@ -1939,9 +1966,7 @@ function fitPlanToLimit(plan, lockedSlots = []) {
 }
 
 function getWorkLockedSlots(plan) {
-  return slotNames
-    .map((_, slotIndex) => slotIndex)
-    .filter(slotIndex => isWorkMeal(selectedDay, plan.shift, slotIndex));
+  return [];
 }
 
 function toggleMeal(index) {
@@ -2109,10 +2134,6 @@ function buildDynamicShoppingPlan() {
       const item = options[optionIndex] || options[0];
       const grams = Number(plan.weights?.[slotIndex] || baseGrams(item));
       menuItems.push([`${dayShortNames[day]} ${slotNames[slotIndex]}`, `${item.name} (${grams} g)`]);
-      if (isWorkMeal(day, plan.shift, slotIndex)) {
-        workMeals.push([`${dayShortNames[day]} ${slotNames[slotIndex]}`, `${item.name} (${grams} g)`]);
-        return;
-      }
       suggestProducts(item, grams, addProduct);
     });
   }
@@ -2120,20 +2141,12 @@ function buildDynamicShoppingPlan() {
   const productItems = Array.from(products.entries()).map(([name, amounts]) => [name, amounts.join(" + ")]);
   return [
     { category: "Menu tygodnia", items: menuItems },
-    { category: "Odliczone posilki w pracy", items: workMeals.length ? workMeals : [["Brak", "W dni robocze ustaw zmiane 6:00, 14:00 albo 22:00"]] },
     { category: "Zakupy z wybranych dan", items: productItems.length ? productItems : [["Brak", "Uloz menu w zakladce Plan/Tydzien"]] },
     { category: "Stale zapasy", items: [["Woda niegazowana", "min. 2 l dziennie"], ["Jajka", "zapas na szybkie posilki"], ["Ser bialy/twarog", "wedlug planu"], ["Serek homogenizowany bez cukru", "wedlug planu"], ["Lagodne przyprawy", "bez cukru"], ["Oliwa", "do odmierzania lyzeczka"]] }
   ];
 }
 
 function isWorkMeal(day, shift, slotIndex) {
-  const isWeekend = day >= 5;
-  if (isWeekend) return false;
-  const plan = getPlanForDay(day);
-  if (plan.mealTypes?.[slotIndex] === "canteen") return true;
-  if (!shift) return false;
-  if (shift === "first" || shift === "second") return slotIndex === 1;
-  if (shift === "night") return slotIndex === 0;
   return false;
 }
 
@@ -2197,15 +2210,57 @@ function renderSettings() {
   document.getElementById("targetProtein").value = targets.protein;
   document.getElementById("targetFat").value = targets.fat;
   document.getElementById("targetCarbs").value = targets.carbs;
-  settings.mealTimes.forEach((time, index) => {
-    document.getElementById(`mealTime${index}`).value = time;
-  });
+  renderMealScheduleEditor();
   document.getElementById("drinkTime").value = settings.drinkTime;
   document.getElementById("waterStart").value = settings.waterStart;
   document.getElementById("waterEnd").value = settings.waterEnd;
 }
 
+function renderCustomSlotOptions() {
+  const select = document.getElementById("customSlot");
+  if (!select) return;
+  const current = select.value;
+  select.innerHTML = slotNames.map((name, index) => `<option value="${index}">${name}</option>`).join("") + '<option value="list">tylko do listy</option>';
+  const validIndex = /^\d+$/.test(current) && Number(current) < slotNames.length;
+  select.value = current === "list" || validIndex ? current : "0";
+}
+
+function renderMealScheduleEditor() {
+  const holder = document.getElementById("mealScheduleRows");
+  holder.innerHTML = "";
+  settings.mealSlots.forEach((slot, index) => {
+    const row = document.createElement("div");
+    row.className = "meal-schedule-row";
+    row.innerHTML = `<input class="slot-name" type="text" value="${slot.name}" aria-label="Nazwa posilku ${index + 1}"><input class="slot-time" type="time" value="${slot.time}" aria-label="Godzina posilku ${index + 1}"><button type="button" class="remove-slot" aria-label="Usun ${slot.name}" ${settings.mealSlots.length === 1 ? "disabled" : ""}>Usun</button>`;
+    row.querySelector(".remove-slot").addEventListener("click", () => removeMealSlot(index));
+    holder.append(row);
+  });
+}
+
+function readMealSlotsFromEditor() {
+  return Array.from(document.querySelectorAll(".meal-schedule-row")).map((row, index) => ({
+    name: row.querySelector(".slot-name").value.trim() || `Posilek ${index + 1}`,
+    time: row.querySelector(".slot-time").value || "12:00",
+    type: settings.mealSlots[index]?.type || "any"
+  }));
+}
+
+function addMealSlot() {
+  settings.mealSlots = readMealSlotsFromEditor();
+  if (settings.mealSlots.length >= 8) return showToast("Mozna ustawic maksymalnie 8 posilkow.");
+  settings.mealSlots.push({ name: `Posilek ${settings.mealSlots.length + 1}`, time: "12:00", type: "any" });
+  renderMealScheduleEditor();
+}
+
+function removeMealSlot(index) {
+  settings.mealSlots = readMealSlotsFromEditor();
+  if (settings.mealSlots.length <= 1) return;
+  settings.mealSlots.splice(index, 1);
+  renderMealScheduleEditor();
+}
+
 function saveSettings() {
+  const mealSlots = readMealSlotsFromEditor();
   settings = {
     ...settings,
     targets: {
@@ -2214,42 +2269,23 @@ function saveSettings() {
       fat: Number(document.getElementById("targetFat").value || defaultTargets.fat),
       carbs: Number(document.getElementById("targetCarbs").value || defaultTargets.carbs)
     },
-    mealTimes: [0, 1, 2, 3].map(index => document.getElementById(`mealTime${index}`).value || defaultSettings.mealTimes[index]),
+    mealSlots,
     drinkTime: document.getElementById("drinkTime").value || defaultSettings.drinkTime,
     waterStart: document.getElementById("waterStart").value || defaultSettings.waterStart,
     waterEnd: document.getElementById("waterEnd").value || defaultSettings.waterEnd
   };
+  syncMealSlotSettings();
   localStorage.setItem(appKey("settings"), JSON.stringify(settings));
-  const plan = getPlan();
-  plan.mealTimes = [...settings.mealTimes];
-  setPlan(plan);
+  for (let day = 0; day < 7; day += 1) {
+    const plan = normalizePlanSlots(getPlanForDay(day));
+    plan.mealTimes = [...settings.mealTimes];
+    localStorage.setItem(storageKeyForDay("plan", day), JSON.stringify(rememberSelectedMeals(backfillWeights(plan))));
+  }
+  renderCustomSlotOptions();
   renderMeals();
   renderWeek();
   renderShopping();
   showToast("Ustawienia zapisane.");
-}
-
-function applyShiftPreset(presetId) {
-  const preset = shiftPresets[presetId];
-  settings = { ...settings, ...preset };
-  localStorage.setItem(appKey("settings"), JSON.stringify(settings));
-  const plan = getPlan();
-  plan.mealTypes = [...preset.mealTypes];
-  plan.mealTimes = [...preset.mealTimes];
-  plan.shift = presetId;
-  slotNames.forEach((_, slotIndex) => {
-    const options = getMealOptions(slotIndex, plan);
-    const item = options[plan.selected[slotIndex] || 0] || options[0];
-    if (plan.mealTypes?.[slotIndex] === "canteen") {
-      setFixedCanteenMeal(plan, slotIndex);
-    } else {
-      plan.weights[slotIndex] = plan.weights[slotIndex] || baseGrams(item);
-    }
-  });
-  setPlan(plan);
-  renderSettings();
-  renderMeals();
-  showToast(`Ustawiono: ${preset.label}.`);
 }
 
 async function enableNotifications() {
@@ -2352,10 +2388,7 @@ function bindEvents() {
   document.getElementById("addCustomMeal").addEventListener("click", () => addCustomMeal(readCustomForm()));
   document.getElementById("addResult").addEventListener("click", addResult);
 
-  document.querySelectorAll("button[data-preset]").forEach(button => {
-    button.addEventListener("click", () => applyShiftPreset(button.dataset.preset));
-  });
-
+  document.getElementById("addMealSlot").addEventListener("click", addMealSlot);
   document.getElementById("saveSettings").addEventListener("click", saveSettings);
   document.getElementById("enableNotifications").addEventListener("click", enableNotifications);
 
@@ -2377,6 +2410,7 @@ function bindEvents() {
 function boot() {
   migratePlansToWeeklyKeys();
   renderCustomIngredients();
+  renderCustomSlotOptions();
   renderDayOptions();
   renderSettings();
   renderMeals();
@@ -2392,7 +2426,7 @@ function boot() {
       refreshing = true;
       window.location.reload();
     });
-    navigator.serviceWorker.register("sw.js?v=3").then(registration => {
+    navigator.serviceWorker.register("sw.js?v=4").then(registration => {
       registration.update();
       if (registration.waiting) registration.waiting.postMessage({ type: "SKIP_WAITING" });
       registration.addEventListener("updatefound", () => {

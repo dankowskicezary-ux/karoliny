@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#1f6b5c">
   <title>Karoliny</title>
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="stylesheet" href="styles.css?v=3">
+  <link rel="stylesheet" href="styles.css?v=4">
 </head>
 <body>
   <div class="app-shell">
@@ -34,7 +34,7 @@
         </div>
         <div>
           <span class="label">Posilki</span>
-          <strong><span id="mealCount">0</span>/4</strong>
+          <strong><span id="mealCount">0</span>/<span id="mealTotal">4</span></strong>
         </div>
       </section>
 
@@ -73,8 +73,8 @@
           <p id="remainingKcal">2000 kcal zostalo</p>
         </section>
         <div class="tips inline-tip">
-          <h2>Praca zmianowa</h2>
-          <p>Wybierz zmiane w Ustawieniach albo ustaw typ posilku recznie. Na 6:00 i 14:00 posilek 2 jest kantyna. Na 22:00 posilek 1 jest kantyna. "Zaproponuj dzien" uklada dania, a "Dopasuj reszte" zmienia tylko gramatury.</p>
+          <h2>Staly rytm dnia</h2>
+          <p>Karolina pracuje od 7:00 do 15:00. Liczbe posilkow, ich nazwy i godziny mozna dowolnie zmieniac w Ustawieniach.</p>
         </div>
         <div class="button-row day-actions three-actions">
           <button id="suggestDay" type="button">Zaproponuj dzień</button>
@@ -105,13 +105,7 @@
               </div>
             </div>
             <datalist id="customProductList"></datalist>
-            <select id="customSlot">
-              <option value="0">posilek 1</option>
-              <option value="1">posilek 2</option>
-              <option value="2">posilek 3</option>
-              <option value="3">posilek 4</option>
-              <option value="list">tylko do listy</option>
-            </select>
+            <select id="customSlot"></select>
           </div>
           <button id="addCustomMeal" type="button">Przelicz i dodaj posilek</button>
         </section>
@@ -126,7 +120,7 @@
         <div class="shopping-head">
           <div>
             <h2>Lista na 7 dni</h2>
-            <p>Lista powstaje z menu tygodnia. W dni robocze aplikacja odlicza posilki w pracy: 6:00 i 14:00 posilek 2, a 22:00 posilek 1. Weekend nie jest odliczany.</p>
+            <p>Lista powstaje ze wszystkich posilkow wybranych w menu tygodnia.</p>
           </div>
           <button id="resetShopping" type="button">Reset</button>
         </div>
@@ -173,21 +167,19 @@
           <label>Tluszcz g <input id="targetFat" type="number" inputmode="numeric"></label>
           <label>Wegle g <input id="targetCarbs" type="number" inputmode="numeric"></label>
           <label>Przypomnienie wody <input id="drinkTime" type="time"></label>
-          <label>Posilek 1 <input id="mealTime0" type="time"></label>
-          <label>Posilek 2 <input id="mealTime1" type="time"></label>
-          <label>Obiad <input id="mealTime2" type="time"></label>
-          <label>Kolacja <input id="mealTime3" type="time"></label>
           <label>Start wody <input id="waterStart" type="time"></label>
           <label>Koniec wody <input id="waterEnd" type="time"></label>
         </div>
+        <section class="meal-schedule-card" aria-label="Godziny posilkow">
+          <div class="meal-schedule-head">
+            <div><h2>Posilki i godziny</h2><p>Dodawaj, usuwaj i ustawiaj godziny posilkow.</p></div>
+            <button id="addMealSlot" type="button">Dodaj posilek</button>
+          </div>
+          <div id="mealScheduleRows" class="meal-schedule-rows"></div>
+        </section>
         <div class="button-row">
           <button id="saveSettings" type="button">Zapisz ustawienia</button>
           <button id="enableNotifications" type="button">Wlacz powiadomienia</button>
-        </div>
-        <div class="preset-row">
-          <button type="button" data-preset="first">6:00</button>
-          <button type="button" data-preset="second">14:00</button>
-          <button type="button" data-preset="night">22:00</button>
         </div>
         <div class="tips">
           <h2>Insulinoopornosc</h2>
@@ -206,7 +198,7 @@
         </div>
         <div class="tips">
           <h2>Zakupy</h2>
-          <p>Ustaw zmiane dla kazdego dnia roboczego. Zakupy pomijaja posilek jedzony w pracy, ale w weekend licza wszystkie posilki jako domowe.</p>
+          <p>Zakupy uwzgledniaja wszystkie posilki zaplanowane na caly tydzien.</p>
         </div>
         <div class="tips">
           <h2>Objawy alarmowe</h2>
@@ -214,14 +206,14 @@
         </div>
         <div class="tips">
           <h2>Na telefonie</h2>
-          <p>Wersja: Karoliny v3. Jesli aplikacja wyglada staro, otworz adres z koncowka ?v=3 w przegladarce i odswiez strone.</p>
+          <p>Wersja: Karoliny v4. Jesli aplikacja wyglada staro, otworz adres z koncowka ?v=4 w przegladarce i odswiez strone.</p>
         </div>
       </section>
     </main>
   </div>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="app.js?v=3"></script>
+  <script src="app.js?v=4"></script>
 </body>
 </html>
 

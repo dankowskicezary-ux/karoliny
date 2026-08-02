@@ -723,6 +723,33 @@ button.primary {
   gap: 10px;
 }
 
+.meal-schedule-card {
+  margin: 16px 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fff;
+}
+
+.meal-schedule-head,
+.meal-schedule-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.meal-schedule-head { margin-bottom: 12px; }
+.meal-schedule-head h2, .meal-schedule-head p { margin: 0; }
+.meal-schedule-rows { display: grid; gap: 10px; }
+.meal-schedule-row .slot-time { width: 120px; }
+
+@media (max-width: 520px) {
+  .meal-schedule-head { grid-template-columns: 1fr; }
+  .meal-schedule-row { grid-template-columns: minmax(0, 1fr) 110px; }
+  .meal-schedule-row .remove-slot { grid-column: 1 / -1; }
+}
+
 .settings-grid label {
   display: grid;
   grid-template-columns: 1fr 130px;
