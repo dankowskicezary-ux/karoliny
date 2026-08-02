@@ -1,0 +1,17 @@
+{
+  "name": "Karoliny",
+  "short_name": "Karoliny",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f4f1ea",
+  "theme_color": "#1f6b5c",
+  "description": "Jadlospis, woda, zakupy i przypomnienia dla Karoliny.",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

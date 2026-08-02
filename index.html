@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#1f6b5c">
+  <title>Karoliny</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="styles.css?v=3">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Plan Karoliny</p>
+        <h1>Karoliny</h1>
+      </div>
+      <button class="icon-btn" id="installBtn" type="button" title="Zainstaluj aplikacje" hidden>+</button>
+    </header>
+
+    <main>
+      <section class="status-band" aria-label="Status dnia">
+        <div>
+          <span class="label">Plan</span>
+          <strong id="dayName">Poniedzialek</strong>
+        </div>
+        <div>
+          <span class="label">Kalorie</span>
+          <strong id="kcalCount">0/2000</strong>
+        </div>
+        <div>
+          <span class="label">Woda</span>
+          <strong><span id="waterCount">0</span>/10</strong>
+        </div>
+        <div>
+          <span class="label">Posilki</span>
+          <strong><span id="mealCount">0</span>/4</strong>
+        </div>
+      </section>
+
+      <nav class="tabs" aria-label="Widoki">
+        <button class="tab active" type="button" data-tab="today">Plan</button>
+        <button class="tab" type="button" data-tab="week">Tydzien</button>
+        <button class="tab" type="button" data-tab="shopping">Zakupy</button>
+        <button class="tab" type="button" data-tab="results">Wyniki</button>
+        <button class="tab" type="button" data-tab="water">Woda</button>
+        <button class="tab" type="button" data-tab="settings">Ustawienia</button>
+      </nav>
+
+      <section class="panel active" id="todayPanel" aria-label="Dzisiejszy jadlospis">
+        <div class="day-switch">
+          <button id="prevDay" type="button">Poprzedni</button>
+          <select id="daySelect" aria-label="Wybierz dzien"></select>
+          <button id="nextDay" type="button">Nastepny</button>
+        </div>
+        <section class="summary-card" aria-label="Podsumowanie kalorii">
+          <div>
+            <span class="label">Kalorie</span>
+            <strong id="todayKcal">0 kcal</strong>
+          </div>
+          <div>
+            <span class="label">Bialko</span>
+            <strong id="todayProtein">0 g</strong>
+          </div>
+          <div>
+            <span class="label">Tluszcz</span>
+            <strong id="todayFat">0 g</strong>
+          </div>
+          <div>
+            <span class="label">Wegle</span>
+            <strong id="todayCarbs">0 g</strong>
+          </div>
+          <p id="remainingKcal">2000 kcal zostalo</p>
+        </section>
+        <div class="tips inline-tip">
+          <h2>Praca zmianowa</h2>
+          <p>Wybierz zmiane w Ustawieniach albo ustaw typ posilku recznie. Na 6:00 i 14:00 posilek 2 jest kantyna. Na 22:00 posilek 1 jest kantyna. "Zaproponuj dzien" uklada dania, a "Dopasuj reszte" zmienia tylko gramatury.</p>
+        </div>
+        <div class="button-row day-actions three-actions">
+          <button id="suggestDay" type="button">Zaproponuj dzień</button>
+          <button id="fitLimit" type="button">Dopasuj reszte do limitu</button>
+          <button id="resetDay" type="button">Reset dnia</button>
+        </div>
+        <section class="custom-card" aria-label="Wlasne danie">
+          <h2>Wlasne danie</h2>
+          <div class="custom-grid custom-builder">
+            <div class="custom-mode" role="radiogroup" aria-label="Tryb dodawania posilku">
+              <label><input type="radio" name="customMode" value="products" checked> produkty</label>
+              <label><input type="radio" name="customMode" value="ready"> gotowe danie</label>
+            </div>
+            <input id="customName" type="text" placeholder="Nazwa, np. sniadanie jajka albo obiad w pracy">
+            <div id="customProductMode">
+              <div id="customIngredientRows" class="ingredient-rows"></div>
+              <button id="addIngredientRow" type="button" class="secondary-action">Dodaj produkt</button>
+            </div>
+            <div id="customReadyMode" class="ready-mode hidden">
+              <input id="customReadySearch" type="search" list="readyMealList" placeholder="Szukaj gotowego dania albo przepisu">
+              <datalist id="readyMealList"></datalist>
+              <input id="customReadyGrams" type="number" inputmode="numeric" min="30" max="1000" step="10" value="250" placeholder="gramatura">
+              <div id="customReadyPreview" class="ready-preview"></div>
+              <div class="ready-addons">
+                <strong>Dodatki do przepisu</strong>
+                <div id="readyAddonRows" class="ingredient-rows"></div>
+                <button id="addReadyAddonRow" type="button" class="secondary-action">Dodaj cos do przepisu</button>
+              </div>
+            </div>
+            <datalist id="customProductList"></datalist>
+            <select id="customSlot">
+              <option value="0">posilek 1</option>
+              <option value="1">posilek 2</option>
+              <option value="2">posilek 3</option>
+              <option value="3">posilek 4</option>
+              <option value="list">tylko do listy</option>
+            </select>
+          </div>
+          <button id="addCustomMeal" type="button">Przelicz i dodaj posilek</button>
+        </section>
+        <div id="mealsList" class="meal-list"></div>
+      </section>
+
+      <section class="panel" id="weekPanel" aria-label="Jadlospis tygodniowy">
+        <div id="weekList" class="week-list"></div>
+      </section>
+
+      <section class="panel" id="shoppingPanel" aria-label="Lista zakupow">
+        <div class="shopping-head">
+          <div>
+            <h2>Lista na 7 dni</h2>
+            <p>Lista powstaje z menu tygodnia. W dni robocze aplikacja odlicza posilki w pracy: 6:00 i 14:00 posilek 2, a 22:00 posilek 1. Weekend nie jest odliczany.</p>
+          </div>
+          <button id="resetShopping" type="button">Reset</button>
+        </div>
+        <div id="shoppingList" class="shopping-list"></div>
+      </section>
+
+      <section class="panel" id="resultsPanel" aria-label="Wyniki">
+        <section class="custom-card">
+          <h2>Dodaj pomiar</h2>
+          <div class="custom-grid">
+            <input id="resultWeight" type="number" inputmode="decimal" placeholder="waga kg">
+            <input id="resultPressure" type="text" placeholder="cisnienie np. 130/80">
+            <input id="resultHeartburn" type="number" inputmode="numeric" min="0" max="10" placeholder="zgaga 0-10">
+            <input id="resultPain" type="number" inputmode="numeric" min="0" max="10" placeholder="bol 0-10">
+            <input id="resultNote" type="text" placeholder="notatka">
+          </div>
+          <button id="addResult" type="button">Zapisz pomiar</button>
+        </section>
+        <div id="resultsSummary" class="results-summary"></div>
+        <div id="resultsList" class="week-list"></div>
+      </section>
+
+      <section class="panel" id="waterPanel" aria-label="Plan picia wody">
+        <div class="water-card">
+          <h2>Woda na dzisiaj</h2>
+          <p>Cel startowy: 2,5 litra dziennie, czyli 10 porcji po 250 ml. Przy upale lub poceniu dolej 1-2 porcje.</p>
+          <div class="water-grid" id="waterGrid"></div>
+          <button id="resetWater" type="button">Reset wody</button>
+        </div>
+        <div class="tips">
+          <h2>Wazne</h2>
+          <ul>
+            <li>Nie pij duzo naraz przed snem.</li>
+            <li>Przy Piramilu nie bierz potasu w suplementach bez lekarza.</li>
+            <li>Jesli masz zawroty glowy lub bardzo niskie cisnienie, skontaktuj sie z lekarzem.</li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="panel" id="settingsPanel" aria-label="Ustawienia">
+        <div class="settings-grid">
+          <label>Limit kcal <input id="targetKcal" type="number" inputmode="numeric"></label>
+          <label>Bialko g <input id="targetProtein" type="number" inputmode="numeric"></label>
+          <label>Tluszcz g <input id="targetFat" type="number" inputmode="numeric"></label>
+          <label>Wegle g <input id="targetCarbs" type="number" inputmode="numeric"></label>
+          <label>Przypomnienie wody <input id="drinkTime" type="time"></label>
+          <label>Posilek 1 <input id="mealTime0" type="time"></label>
+          <label>Posilek 2 <input id="mealTime1" type="time"></label>
+          <label>Obiad <input id="mealTime2" type="time"></label>
+          <label>Kolacja <input id="mealTime3" type="time"></label>
+          <label>Start wody <input id="waterStart" type="time"></label>
+          <label>Koniec wody <input id="waterEnd" type="time"></label>
+        </div>
+        <div class="button-row">
+          <button id="saveSettings" type="button">Zapisz ustawienia</button>
+          <button id="enableNotifications" type="button">Wlacz powiadomienia</button>
+        </div>
+        <div class="preset-row">
+          <button type="button" data-preset="first">6:00</button>
+          <button type="button" data-preset="second">14:00</button>
+          <button type="button" data-preset="night">22:00</button>
+        </div>
+        <div class="tips">
+          <h2>Insulinoopornosc</h2>
+          <p>Plan jest ustawiony na malo wegli i niski ladunek glikemiczny: chude bialko, warzywa nieskrobiowe, male porcje kaszy/straczkow i brak cukru. Wegle sa rozkladane w ciagu dnia zamiast jednego duzego posilku.</p>
+        </div>
+        <div class="tips">
+          <h2>Wykluczenia</h2>
+          <p>Bez mleka, jogurtu naturalnego, kefiru, skyru i wiekszosci nabialu. Z nabialu zostaja serek homogenizowany bez cukru i ser bialy/twarog. Bez kawy, Nootri, brukselki, owsianek, cytrusow, tlustych mies i pieczonego kalafiora.</p>
+        </div>
+        <div class="tips">
+          <h2>Porcje</h2>
+          <p>Wpisz realna wage jedzenia w gramach. Aplikacja przeliczy kalorie proporcjonalnie do bazowej porcji. Przy produktach weglowodanowych trzymaj male porcje i lacz je z bialkiem oraz warzywami.</p>
+        </div>
+        <div class="tips">
+          <h2>Baza produktow</h2><p>Produkty sa liczone w standardzie na 100 g albo na sztuke. Energia jest zgodna z zasadami etykiet: bialko 4 kcal/g, wegle 4 kcal/g, tluszcz 9 kcal/g. Dania kantynowe, panierka i sosy sa szacunkowe, bo zaleza od przepisu i ilosci tluszczu.</p>
+        </div>
+        <div class="tips">
+          <h2>Zakupy</h2>
+          <p>Ustaw zmiane dla kazdego dnia roboczego. Zakupy pomijaja posilek jedzony w pracy, ale w weekend licza wszystkie posilki jako domowe.</p>
+        </div>
+        <div class="tips">
+          <h2>Objawy alarmowe</h2>
+          <p>Silny bol w klatce, dusznosc, zimny pot, oslabienie, mdlosci inne niz zwykle albo bol idacy do lewej reki/szczeki to powod do pilnej pomocy medycznej.</p>
+        </div>
+        <div class="tips">
+          <h2>Na telefonie</h2>
+          <p>Wersja: Karoliny v3. Jesli aplikacja wyglada staro, otworz adres z koncowka ?v=3 w przegladarce i odswiez strone.</p>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="app.js?v=3"></script>
+</body>
+</html>
+
